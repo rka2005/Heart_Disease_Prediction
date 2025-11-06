@@ -10,6 +10,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
 from tensorflow.keras.callbacks import EarlyStopping
 import warnings
+import os # <-- 1. Import os
 
 warnings.filterwarnings('ignore')
 tf.get_logger().setLevel('ERROR')
@@ -19,8 +20,18 @@ scaler = StandardScaler()
 model = None
 feature_order = []
 
+# Define file paths
+csv_data = "data/heart_disease.csv"
+output_dir = "train" # <-- 2. Define your output folder
+
+# Create the output directory if it doesn't exist (optional, but good practice)
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
+    print(f"Created directory: {output_dir}")
+
 try:
-    data = pd.read_csv("heart_disease.csv")
+    # --- 3. Fixed bug: Use the variable csv_data, not the string "csv_data" ---
+    data = pd.read_csv(csv_data) 
 
     num_cols = data.select_dtypes(include=np.number).columns
     for col in num_cols:
@@ -100,8 +111,10 @@ try:
     print("\nClassification Report:\n", classification_report(y_test, y_pred, target_names=['No Disease (0)', 'Disease (1)']))
     print("\nConfusion Matrix:\n", confusion_matrix(y_test, y_pred))
 
-    model.save("tf_heart_model_full_features.keras")
-    print("\nModel saved to 'tf_heart_model_full_features.keras'")
+    # --- 4. Modified save paths ---
+    model_save_path = os.path.join(output_dir, "tf_heart_model_full_features.keras")
+    model.save(model_save_path)
+    print(f"\nModel saved to '{model_save_path}'")
     
     # Accuracy Plot
     plt.figure(figsize=(10, 5))
@@ -112,7 +125,8 @@ try:
     plt.ylabel("Accuracy")
     plt.legend()
     plt.grid(True)
-    plt.savefig("tf_improved_accuracy.png")
+    acc_plot_path = os.path.join(output_dir, "tf_improved_accuracy.png")
+    plt.savefig(acc_plot_path)
     plt.close() 
 
     # Loss Plot
@@ -124,10 +138,11 @@ try:
     plt.ylabel("Loss")
     plt.legend()
     plt.grid(True)
-    plt.savefig("tf_improved_loss.png")
+    loss_plot_path = os.path.join(output_dir, "tf_improved_loss.png")
+    plt.savefig(loss_plot_path)
     plt.close() 
     
-    print("Plots saved to 'tf_improved_accuracy.png' and 'tf_improved_loss.png'")
+    print(f"Plots saved to '{acc_plot_path}' and '{loss_plot_path}'")
 
     
     print("\n\n--- Enter Details for Live Prediction ---")
@@ -195,10 +210,12 @@ try:
         plt.ylim(0, 1.1)
         plt.grid(axis='y', linestyle='--', alpha=0.7)
         
-        plt.savefig("prediction_confidence.png")
+        # --- 4. Modified save path ---
+        pred_plot_path = os.path.join(output_dir, "prediction_confidence.png")
+        plt.savefig(pred_plot_path)
         plt.close()
         
-        print("\nA graph of this specific prediction has been saved to 'prediction_confidence.png'")
+        print(f"\nA graph of this specific prediction has been saved to '{pred_plot_path}'")
 
     
     except Exception as e:
@@ -207,6 +224,7 @@ try:
 
 
 except FileNotFoundError:
-    print("Error: The file 'heart_disease.csv' was not found.")
+    # --- 3. Updated error message ---
+    print(f"Error: The file '{csv_data}' was not found.") 
 except Exception as e:
     print(f"An error occurred: {e}")
