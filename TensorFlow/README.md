@@ -374,8 +374,10 @@ For issues or questions about:
 
 ---
 
-**📝 Created:** November 2025
-**🔢 Version:** 1.0
-**🤖 Framework:** TensorFlow 2.x
-**📜 License:** MIT (See LICENSE file)
-**🏫 Institution:** Adamas University
+<div align="center">
+
+**📝 Created:** November 2025 | **🔢 Version:** 1.0 | **🤖 Framework:** TensorFlow 2.x
+
+**📜 License:** MIT (See LICENSE file) | **🏫 Institution:** Adamas University
+
+</div>
