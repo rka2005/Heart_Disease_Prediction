@@ -1,4 +1,4 @@
-# ❤️ Heart Disease Prediction System
+# ❤️ Heart Disease Prediction System {#top}
 
 > **🎓 Adamas University - B.Tech CSE Project**  
 > A comprehensive machine learning system predicting heart disease risk using **XGBoost** and **TensorFlow** implementations with real-time prediction interfaces.
@@ -635,7 +635,7 @@ Always consult healthcare professionals. See [LICENSE](LICENSE) for full terms.
 
 <div align="center">
 
-### <a href="#-heart-disease-prediction-system">⬆️ Move to Top</a>
+### <a href="#top">⬆️ Move to Top</a>
 
 </div>
 
