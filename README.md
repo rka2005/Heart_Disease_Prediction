@@ -1,7 +1,9 @@
-# ❤️ Heart Disease Prediction System {#top}
+# ❤️ Heart Disease Prediction System
 
 > **🎓 Adamas University - B.Tech CSE Project**  
 > A comprehensive machine learning system predicting heart disease risk using **XGBoost** and **TensorFlow** implementations with real-time prediction interfaces.
+
+<a name="top"></a>
 
 ---
 
@@ -10,7 +12,7 @@
 **📊 Dual-Implementation ML Project**  
 **⚡ XGBoost (Fast) | 🧠 TensorFlow (Accurate)**
 
-**Faculty Mentor**: �‍🏫 Dr. Debdutta Pal  
+**Faculty Mentor**: 👩‍🏫 Dr. Debdutta Pal  
 **Project Duration**: November 2025  
 **Last Updated**: 8th November, 2025  
 **Version**: 1.0 | **Status**: ✅ Complete
