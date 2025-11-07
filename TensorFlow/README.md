@@ -6,7 +6,7 @@
 > - **README.md** (this file) - 🚀 Quick start and main overview
 > - **COMPLETE_GUIDANCE.md** - 📚 Comprehensive technical documentation (5000+ words)
 > - **TERMS.md** - 🔍 Glossary of ML and medical terms
-> - **LICENSE** - 📋 Project information, team, and requirements
+> - **[LICENSE](LICENSE)** - 📋 Project information, team, and requirements
 
 ## 📋 Overview
 
@@ -336,7 +336,7 @@ For issues or questions about:
 - 🎚️ Decision Threshold, Regularization techniques
 - ⚕️ Medical-specific concepts (Sensitivity, Specificity, PPV, NPV)
 
-**📋 For project details**, see **LICENSE** which includes:
+**📋 For project details**, see **[LICENSE](LICENSE)** which includes:
 - 👥 Complete team information
 - 📋 Project requirements and specifications
 - 📥 Installation instructions
@@ -378,6 +378,6 @@ For issues or questions about:
 
 **📝 Created:** November 2025 | **🔢 Version:** 1.0 | **🤖 Framework:** TensorFlow 2.x
 
-**📜 License:** MIT (See LICENSE file) | **🏫 Institution:** Adamas University
+**📜 License:** MIT (See [LICENSE](LICENSE) file) | **🏫 Institution:** Adamas University
 
 </div>
