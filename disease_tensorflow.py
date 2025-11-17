@@ -225,7 +225,7 @@ try:
 
         print("\n====================== RESULT ======================")
 
-        if no_risk > risk:
+        if no_risk < risk:
             print(f"✅ Low Risk: No heart disease detected.")
             print(f"Confidence in No Disease: {no_risk*100:.2f}%")
             print(f"Risk of Disease: {risk*100:.2f}%")
