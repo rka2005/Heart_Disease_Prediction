@@ -14,8 +14,8 @@ This project implements a binary classification model to predict whether a patie
 
 ## 👥 Team Members
 
-- **Babin Bid** - 👨‍💻 Lead Developer
-- **Rohit Kumar Adak** - 👨‍💻 Lead Developer
+- **Babin Bid** - 👨‍💻 Developer
+- **Rohit Kumar Adak** - 👨‍💻 Developer
 - **Ritika Pramanick** - 👩‍💻 Developer
 - **Liza Ghosh** - 👩‍💻 Developer
 
