@@ -156,10 +156,10 @@ The trained model provides:
 ### Model Performance Graphs
 
 #### High Risk Cases
-![High Risk Accuracy](train/high.png)
+![High Risk Accuracy](high.png)
 
 #### Low Risk Cases
-![Low Risk Accuracy](train/low.png)
+![Low Risk Accuracy](low.png)
 
 ## 🔍 Key Features
 
