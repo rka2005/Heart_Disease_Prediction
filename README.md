@@ -74,7 +74,7 @@ The dataset contains **10,000+ patient records** with 21 features including:
 
 ## 🔧 Technical Stack
 
-- **🐍 Python 3.12+**
+- **🐍 Python 3.12.9 or lower (recommended: 3.11.x / 3.12.x)**
 - **🤖 TensorFlow/Keras** - Deep learning framework
 - **📊 Pandas** - Data manipulation and analysis
 - **🔢 NumPy** - Numerical computing
@@ -86,7 +86,18 @@ The dataset contains **10,000+ patient records** with 21 features including:
 
 ### Prerequisites
 
-Install the required packages:
+- Install **Python 3.12.9 or lower** (TensorFlow compatibility requirement).
+- It is recommended to use a virtual environment (`venv`).
+
+### Create and Activate Virtual Environment (Windows PowerShell)
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+```
+
+### Install Dependencies
 
 ```bash
 pip install pandas numpy scikit-learn tensorflow imbalanced-learn matplotlib
@@ -99,12 +110,17 @@ pip install pandas numpy scikit-learn tensorflow imbalanced-learn matplotlib
    cd Heart_Disease_Prediction
    ```
 
-2. **Run the training script:**
+2. **Activate virtual environment (if not already active):**
+   ```powershell
+   .\.venv\Scripts\Activate.ps1
+   ```
+
+3. **Run the training script:**
    ```bash
    python disease_tensorflow.py
    ```
 
-3. **Follow the interactive prompts:**
+4. **Follow the interactive prompts:**
    - Enter patient health metrics when prompted
    - View real-time prediction results with confidence scores
    - Generated visualizations are saved in the `train/` directory
@@ -181,6 +197,8 @@ The script generates the following files in the `train/` directory:
 ## ⚠️ Important Notes
 
 - 🔬 The model is trained on the provided dataset and should be validated on external datasets for production use
+- 🐍 Use **Python 3.12.9 or lower** to avoid TensorFlow installation issues
+- 🧪 A project virtual environment (`.venv`) is included/recommended for dependency isolation
 - 📊 Missing values are handled using median/mode imputation
 - 📏 All numerical features are standardized before feeding to the model
 - 🏷️ Categorical features are label-encoded during preprocessing
