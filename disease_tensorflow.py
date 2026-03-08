@@ -1,262 +1,333 @@
 import pandas as pd
 import numpy as np
+import os
+import warnings
+
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, LabelEncoder
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, precision_recall_curve, f1_score
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.utils.class_weight import compute_class_weight
+
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, BatchNormalization
 from tensorflow.keras.callbacks import EarlyStopping
-import warnings
-import os
-from imblearn.over_sampling import SMOTE
 
-warnings.filterwarnings('ignore')
-tf.get_logger().setLevel('ERROR')
+from imblearn.combine import SMOTETomek
+
+warnings.filterwarnings("ignore")
+tf.get_logger().setLevel("ERROR")
 
 label_encoders = {}
 scaler = StandardScaler()
-model = None
 feature_order = []
 
 csv_data = "data/heart_disease.csv"
 output_dir = "train"
 
-
-if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
-    print(f"Created directory: {output_dir}")
+os.makedirs(output_dir, exist_ok=True)
 
 try:
-    data = pd.read_csv(csv_data) 
 
+    # ==========================
+    # LOAD DATA
+    # ==========================
+
+    data = pd.read_csv(csv_data)
+
+    # Fill missing numeric
     num_cols = data.select_dtypes(include=np.number).columns
     for col in num_cols:
-        median_val = data[col].median()
-        data[col] = data[col].fillna(median_val)
-        
-    cat_cols = data.select_dtypes(include='object').columns
+        data[col].fillna(data[col].median(), inplace=True)
+
+    # Fill missing categorical
+    cat_cols = data.select_dtypes(include="object").columns
     for col in cat_cols:
-        mode_val = data[col].mode()[0]
-        data[col] = data[col].fillna(mode_val)
+        data[col].fillna(data[col].mode()[0], inplace=True)
 
-    data['Heart Disease Status'] = (data['Heart Disease Status'] == 'Yes').astype(int)
+    # Target conversion
+    data["Heart Disease Status"] = (data["Heart Disease Status"] == "Yes").astype(int)
 
-    data['Stress Level'] = data['Stress Level'].map({'Low': 1, 'Medium': 2, 'High': 3}).fillna(2)
-    
+    # Stress level mapping - FIX: handle unmapped values
+    stress_map = {"Low": 1, "Medium": 2, "High": 3}
+    data["Stress Level"] = data["Stress Level"].map(stress_map)
+    data["Stress Level"].fillna(2, inplace=True)  # Fill any unmapped with Medium
+
+    # Encode categorical columns
     for col in data.columns:
-        if data[col].dtype == 'object':
+        if data[col].dtype == 'object' or isinstance(data[col].iloc[0], str):
             le = LabelEncoder()
             data[col] = le.fit_transform(data[col].astype(str))
             label_encoders[col] = le
 
-    X = data.drop('Heart Disease Status', axis=1)
-    y = data['Heart Disease Status']
+    X = data.drop("Heart Disease Status", axis=1)
+    y = data["Heart Disease Status"]
     
+    # ADD: Check for and handle any remaining NaN values
+    print(f"\nNaN count per column:\n{X.isna().sum()}")
+    
+    # Fill any remaining NaN with median (numeric) or 0
+    X = X.fillna(X.median(numeric_only=True))
+    X = X.fillna(0)
+    
+    print(f"\nNaN count after cleanup: {X.isna().sum().sum()}")
+
     feature_order = X.columns.tolist()
-    
-    print(f"\nTraining with {X.shape[1]} features: {feature_order}")
+
+    print(f"\nTraining with {len(feature_order)} features")
+
+    # ==========================
+    # TRAIN TEST SPLIT
+    # ==========================
 
     X_train_full, X_test, y_train_full, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42, stratify=y
     )
 
     X_train, X_val, y_train, y_val = train_test_split(
-        X_train_full, y_train_full, test_size=0.15, random_state=42, stratify=y_train_full
+        X_train_full, y_train_full,
+        test_size=0.15,
+        random_state=42,
+        stratify=y_train_full
     )
 
-    scaler = StandardScaler()
+    # ==========================
+    # SCALING
+    # ==========================
+
     X_train_scaled = scaler.fit_transform(X_train)
     X_val_scaled = scaler.transform(X_val)
     X_test_scaled = scaler.transform(X_test)
 
-    print(f"Original training shape: {np.bincount(y_train)}")
-    sm = SMOTE(random_state=42)
-    X_train_res, y_train_res = sm.fit_resample(X_train_scaled, y_train)
-    print(f"Resampled training shape: {np.bincount(y_train_res)}")
-    print(f"Validation shape: {np.bincount(y_val)} (Imbalanced - this is correct)")
+    print("Original distribution:", np.bincount(y_train))
+    
+    # ADD: Debug check
+    print(f"NaN in X_train_scaled: {np.isnan(X_train_scaled).sum()}")
+
+    # ==========================
+    # BALANCING DATA
+    # ==========================
+
+    smote = SMOTETomek(random_state=42)
+    X_train_res, y_train_res = smote.fit_resample(X_train_scaled, y_train)
+
+    print("Balanced distribution:", np.bincount(y_train_res))
+
+    # ==========================
+    # CLASS WEIGHTS
+    # ==========================
+
+    class_weights = compute_class_weight(
+        class_weight="balanced",
+        classes=np.unique(y_train),
+        y=y_train
+    )
+
+    class_weights = dict(enumerate(class_weights))
+
+    print("Class Weights:", class_weights)
+
+    # ==========================
+    # MODEL
+    # ==========================
 
     model = Sequential([
-        tf.keras.Input(shape=(X_train_scaled.shape[1],)), 
-        Dense(128, activation='relu'),
+        tf.keras.Input(shape=(X_train_scaled.shape[1],)),
+
+        Dense(128, activation="relu"),
         BatchNormalization(),
         Dropout(0.3),
-        Dense(64, activation='relu'),
+
+        Dense(64, activation="relu"),
         BatchNormalization(),
         Dropout(0.2),
-        Dense(32, activation='relu'),
-        Dense(1, activation='sigmoid')
+
+        Dense(32, activation="relu"),
+        Dropout(0.1),
+
+        Dense(1, activation="sigmoid")
     ])
 
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.0005)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.0007)
+
     model.compile(
         optimizer=optimizer,
-        loss='binary_crossentropy',
-        metrics=['accuracy', tf.keras.metrics.Precision(), tf.keras.metrics.Recall(), tf.keras.metrics.AUC()]
+        loss="binary_crossentropy",
+        metrics=[
+            "accuracy",
+            tf.keras.metrics.AUC(),
+            tf.keras.metrics.Precision(),
+            tf.keras.metrics.Recall()
+        ]
     )
 
     es = EarlyStopping(
-        monitor='val_recall', 
-        mode='max', 
-        patience=30, 
+        monitor="val_auc",
+        patience=20,
+        mode="max",
         restore_best_weights=True
     )
 
-    print("\n--- Starting Model Training (Optimizing for Recall) ---")
+    print("\nTraining Model...\n")
+
     history = model.fit(
-        X_train_res, y_train_res,
-        epochs=200,
-        batch_size=32,
+        X_train_res,
+        y_train_res,
         validation_data=(X_val_scaled, y_val),
+        epochs=150,
+        batch_size=32,
         callbacks=[es],
-        verbose=1 
+        class_weight=class_weights,
+        verbose=1
     )
-    print("--- Model Training Finished ---")
 
-    y_prob = model.predict(X_test_scaled).ravel()
-    precisions, recalls, thresholds = precision_recall_curve(y_test, y_prob)
-    
-    f1_scores = (2 * precisions * recalls) / (precisions + recalls + 1e-9)
-    
-    optimal_idx = np.argmax(f1_scores)
-    optimal_threshold = thresholds[optimal_idx]
-    
-    print("\n" + "="*80)
-    print("📊 MODEL EVALUATION & THRESHOLD")
-    print("="*80)
-    print(f"Default 0.5 Threshold F1-Score: {f1_score(y_test, (y_prob > 0.5)):.4f}")
-    print(f"Optimal F1-Score: {f1_scores[optimal_idx]:.4f}")
-    print(f"Optimal Threshold found: {optimal_threshold:.4f}")
-    print("This threshold will be used for predictions.")
+    # ==========================
+    # EVALUATION
+    # ==========================
 
-    y_pred_optimal = (y_prob > optimal_threshold).astype(int)
+    y_pred = (model.predict(X_test_scaled) > 0.5).astype(int)
 
-    print(f"\n--- Evaluation with Optimal Threshold ---")
-    print(f"Accuracy: {accuracy_score(y_test, y_pred_optimal) * 100:.2f}%")
-    print("\nClassification Report:\n", classification_report(y_test, y_pred_optimal, target_names=['No Disease (0)', 'Disease (1)']))
-    print("\nConfusion Matrix:\n", confusion_matrix(y_test, y_pred_optimal))
+    print("\n==========================")
+    print("MODEL EVALUATION")
+    print("==========================")
 
-    model_save_path = os.path.join(output_dir, "tf_heart_model_full_features.keras")
-    model.save(model_save_path)
-    print(f"\nModel saved to '{model_save_path}'")
-    
-    plt.figure(figsize=(10, 5))
-    plt.plot(history.history['accuracy'], label='Train Accuracy')
-    plt.plot(history.history['val_accuracy'], label='Val Accuracy')
-    plt.title("Improved Model: Training vs Validation Accuracy")
-    plt.xlabel("Epoch")
-    plt.ylabel("Accuracy")
+    print(f"Accuracy: {accuracy_score(y_test, y_pred)*100:.2f}%")
+
+    print("\nClassification Report\n")
+    print(classification_report(y_test, y_pred))
+
+    print("\nConfusion Matrix\n")
+    print(confusion_matrix(y_test, y_pred))
+
+    # ==========================
+    # SAVE MODEL
+    # ==========================
+
+    model_path = os.path.join(output_dir, "tf_heart_model.keras")
+    model.save(model_path)
+
+    print("\nModel saved to:", model_path)
+
+    # ==========================
+    # PLOTS
+    # ==========================
+
+    plt.figure()
+    plt.plot(history.history["accuracy"], label="Train")
+    plt.plot(history.history["val_accuracy"], label="Validation")
+    plt.title("Accuracy")
     plt.legend()
-    plt.grid(True)
-    acc_plot_path = os.path.join(output_dir, "tf_improved_accuracy.png")
-    plt.savefig(acc_plot_path)
-    plt.close() 
+    plt.savefig(os.path.join(output_dir, "accuracy.png"))
+    plt.close()
 
-    # Loss Plot
-    plt.figure(figsize=(10, 5))
-    plt.plot(history.history['loss'], label='Train Loss')
-    plt.plot(history.history['val_loss'], label='Val Loss')
-    plt.title("Improved Model: Training vs Validation Loss")
-    plt.xlabel("Epoch")
-    plt.ylabel("Loss")
+    plt.figure()
+    plt.plot(history.history["loss"], label="Train")
+    plt.plot(history.history["val_loss"], label="Validation")
+    plt.title("Loss")
     plt.legend()
-    plt.grid(True)
-    loss_plot_path = os.path.join(output_dir, "tf_improved_loss.png")
-    plt.savefig(loss_plot_path)
-    plt.close() 
-    
-    print(f"Plots saved to '{acc_plot_path}' and '{loss_plot_path}'")
+    plt.savefig(os.path.join(output_dir, "loss.png"))
+    plt.close()
 
-    
-    print("\n\n--- Enter Details for Live Prediction ---")
-    
-    new_input_raw = {}
+    print("Training graphs saved.")
 
-    try:
-        for col in feature_order:
-            
-            if col == 'Stress Level':
-                print("\nStress Level Options:\n1 = Low | 2 = Medium | 3 = High")
-                val = float(input(f"Enter {col} (1/2/3): "))
-                new_input_raw[col] = val
-            
-            elif col in label_encoders:
-                le = label_encoders[col]
-                print(f"\nEnter {col} (Options: {le.classes_}): ")
-                val_str = input()
-                
-                try:
-                    new_input_raw[col] = le.transform([val_str])[0]
-                except ValueError:
-                    print(f"Invalid option '{val_str}'. Defaulting to first option: {le.classes_[0]}")
-                    new_input_raw[col] = le.transform([le.classes_[0]])[0]
-            
-            else:
-                val = float(input(f"Enter {col}: "))
-                new_input_raw[col] = val
+    # ==========================
+    # LIVE PREDICTION
+    # ==========================
 
-        new_data = pd.DataFrame([new_input_raw])
-        
-        new_data = new_data[feature_order]
-        
-        new_data_scaled = scaler.transform(new_data)
-        
-        new_prob = model.predict(new_data_scaled).ravel()[0]
-        risk = new_prob
-        no_risk = 1 - new_prob
+    print("\nEnter details for prediction\n")
 
-        print("\n====================== RESULT ======================")
+    new_input = {}
 
-        if no_risk < risk:
-            print(f"✅ Low Risk: No heart disease detected.")
-            print(f"Confidence in No Disease: {no_risk*100:.2f}%")
-            print(f"Risk of Disease: {risk*100:.2f}%")
+    for col in feature_order:
+
+        if col in label_encoders:
+
+            le = label_encoders[col]
+            print(f"{col} options: {list(le.classes_)}")
+            val = input(f"Enter {col}: ")
+
+            try:
+                new_input[col] = le.transform([val])[0]
+            except:
+                new_input[col] = 0
+
         else:
-            print(f"⚠️ High Risk: Possible heart disease detected.")
-            print(f"Risk of Disease: {risk*100:.2f}%")
-            print(f"Confidence in No Disease: {no_risk*100:.2f}%")
+            new_input[col] = float(input(f"Enter {col}: "))
 
-        print("====================================================")
-            
-        plt.figure(figsize=(7, 5))
-        
-        labels = ['Risk of Disease (Class 1)', 'Confidence in No Disease (Class 0)']
-        probabilities = [risk, no_risk]
-        
-        colors = ['#FFB4B4', '#4CAF50']
-        if risk > no_risk:
-            colors = ['#D32F2F', '#B4FFB4']
+    new_df = pd.DataFrame([new_input])
+    new_df = new_df[feature_order]
 
-        bars = plt.bar(labels, probabilities, color=colors)
-        
-        for bar in bars:
-            yval = bar.get_height()
-            plt.text(bar.get_x() + bar.get_width()/2.0, yval + 0.01, f'{yval*100:.2f}%', ha='center', va='bottom')
-        
-        plt.axhline(y=optimal_threshold, color='r', linestyle='--', label=f"Decision Threshold ({optimal_threshold*100:.2f}%)")
-        plt.legend()
-            
-        plt.ylabel('Probability')
-        plt.title('Prediction Confidence for Your Input')
-        plt.ylim(0, 1.1)
-        plt.grid(axis='y', linestyle='--', alpha=0.7)
-        
-        pred_plot_path = os.path.join(output_dir, "prediction_confidence.png")
-        plt.savefig(pred_plot_path)
-        plt.close()
-        
-        print(f"\nA graph of this specific prediction has been saved to '{pred_plot_path}'")
+    new_scaled = scaler.transform(new_df)
 
-    
-    except Exception as e:
-        print(f"\nAn error occurred during prediction: {e}")
-        print("Please ensure you enter valid numerical values and correct options.")
+    prob = model.predict(new_scaled)[0][0]
 
+    risk = prob
+    no_risk = 1 - prob
+    threshold = 0.5
 
-except FileNotFoundError:
-    print(f"Error: The file '{csv_data}' was not found.") 
+    print("\n====================== RESULT ======================")
+
+    if risk > threshold:
+        print("⚠ High Risk of Heart Disease")
+    else:
+        print("✅ Low Risk")
+
+    print(f"Risk Probability: {risk*100:.2f}%")
+    print(f"No Disease Confidence: {no_risk*100:.2f}%")
+
+    print("====================================================")
+
+    # ==========================
+    # PREDICTION CONFIDENCE GRAPH
+    # ==========================
+
+    plt.figure(figsize=(8,5))
+
+    labels = [
+        "Risk of Disease (Class 1)",
+        "Confidence in No Disease (Class 0)"
+    ]
+
+    values = [risk, no_risk]
+
+    colors = ["#d62728", "#98df8a"]
+
+    bars = plt.bar(labels, values, color=colors)
+
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(
+            bar.get_x() + bar.get_width()/2,
+            height + 0.02,
+            f"{height*100:.2f}%",
+            ha="center"
+        )
+
+    plt.axhline(
+        y=threshold,
+        color="red",
+        linestyle="--",
+        label=f"Decision Threshold ({threshold*100:.2f}%)"
+    )
+
+    plt.title("Prediction Confidence for Your Input")
+    plt.ylabel("Probability")
+    plt.ylim(0,1.1)
+
+    plt.grid(axis="y", linestyle="--", alpha=0.6)
+
+    plt.legend()
+
+    pred_graph = os.path.join(output_dir, "prediction_confidence.png")
+
+    plt.savefig(pred_graph)
+    plt.close()
+
+    print(f"\nPrediction graph saved to: {pred_graph}")
+
 except Exception as e:
-    print(f"An error occurred: {e}")
+    print(f"Error: {e}")
