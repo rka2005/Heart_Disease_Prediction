@@ -153,6 +153,14 @@ The trained model provides:
 - **Training Plots**: Accuracy and loss curves for both training and validation sets
 - **Confidence Visualization**: Per-prediction probability distribution
 
+### Model Performance Graphs
+
+#### High Risk Cases
+![High Risk Accuracy](train/high.png)
+
+#### Low Risk Cases
+![Low Risk Accuracy](train/low.png)
+
 ## 🔍 Key Features
 
 ### Data Preprocessing
@@ -193,6 +201,8 @@ The script generates the following files in the `train/` directory:
 - `tf_heart_model_full_features.keras` - Serialized trained model
 - `tf_improved_accuracy.png` - Training vs validation accuracy plot
 - `tf_improved_loss.png` - Training vs validation loss plot
+- `high.png` - High risk prediction accuracy graph
+- `low.png` - Low risk prediction accuracy graph
 - `prediction_confidence.png` - Confidence distribution for current prediction
 
 ## ⚠️ Important Notes
