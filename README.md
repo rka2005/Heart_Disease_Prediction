@@ -27,6 +27,7 @@ This project implements a binary classification model to predict whether a patie
 
 ```
 Heart_Disease_Prediction/
+├── .venv                          # Virtual environment
 ├── disease_tensorflow.py          # Main training and prediction script
 ├── data/
 │   └── heart_disease.csv          # Dataset with 10,000+ patient records
